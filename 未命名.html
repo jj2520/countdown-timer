@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>下班倒计时</title>
+    <style>
+        /* 样式部分与方案一一致，已修复原代码错误，此处省略 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #fff;
+        }
+        
+        .container {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+        
+        .current-time {
+            font-size: 20px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            display: inline-block;
+        }
+        
+        /* 新增输入框样式 */
+        .target-time-input {
+            margin: 15px 0;
+        }
+        
+        .target-time-input label {
+            font-size: 16px;
+            margin-right: 10px;
+        }
+        
+        .target-time-input input {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+        }
+        
+        .target-time {
+            font-size: 18px;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .countdown {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .time-unit {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .time-value {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            min-width: 80px;
+            font-size: 42px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .time-label {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .message {
+            font-size: 20px;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .progress-container {
+            margin: 25px 0;
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .progress-percentage {
+            font-size: 16px;
+            font-weight: bold;
+            margin-top: 8px;
+            text-align: center;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+            border-radius: 5px;
+            transition: width 0.5s ease;
+        }
+        
+        .celebrate {
+            font-size: 50px;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .time-value {
+                font-size: 32px;
+                min-width: 60px;
+                padding: 12px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            .current-time {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 id="countdown-title">距离下午5:30还有</h1>
+        
+        <div class="current-time" id="current-time">当前时间：加载中...</div>
+        
+        <!-- 新增：目标时间输入框 -->
+        <div class="target-time-input">
+            <label for="target-time-picker">选择目标时间：</label>
+            <input type="time" id="target-time-picker" value="17:30">
+        </div>
+        
+        <div class="target-time" id="target-time-display">目标时间：今天 17:30:00</div>
+        
+        <div class="countdown">
+            <div class="time-unit">
+                <div class="time-value" id="hours">00</div>
+                <div class="time-label">小时</div>
+            </div>
+            <div class="time-unit">
+                <div class="time-value" id="minutes">00</div>
+                <div class="time-label">分钟</div>
+            </div>
+            <div class="time-unit">
+                <div class="time-value" id="seconds">00</div>
+                <div class="time-label">秒</div>
+            </div>
+        </div>
+        
+        <div class="progress-container">
+            <div class="progress-info">
+                <span>8:30</span>
+                <span>今日工作进度</span>
+                <span id="progress-end-time">17:30</span>
+            </div>
+            <div class="progress-bar">
+                <div class="progress" id="progress"></div>
+            </div>
+            <div class="progress-percentage" id="progress-percentage">0%</div>
+        </div>
+        
+        <div class="message" id="message">加油，工作即将结束！</div>
+        
+        <div class="celebrate" id="celebrate">🎉 🎊 🎉</div>
+    </div>
+
+    <script>
+        function updateCurrentTime() {
+            const now = new Date();
+            const hours = now.getHours().toString().padStart(2, '0');
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const seconds = now.getSeconds().toString().padStart(2, '0');
+            
+            document.getElementById('current-time').textContent = `当前时间：${hours}:${minutes}:${seconds}`;
+        }
+        
+        function updateCountdown() {
+            // 从输入框获取目标时间（格式：HH:MM）
+            const timePicker = document.getElementById('target-time-picker');
+            const [targetHour, targetMinute] = timePicker.value.split(':').map(Number);
+            
+            const now = new Date();
+            const target = new Date();
+            
+            // 设置目标时间
+            target.setHours(targetHour, targetMinute, 0, 0);
+            
+            // 如果当前时间已超过目标时间，目标设为明天
+            if (now > target) {
+                target.setDate(target.getDate() + 1);
+            }
+            
+            // 计算时间差
+            const diff = target - now;
+            const hours = Math.floor(diff / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            // 更新倒计时数字
+            document.getElementById('hours').textContent = hours.toString().padStart(2, '0');
+            document.getElementById('minutes').textContent = minutes.toString().padStart(2, '0');
+            document.getElementById('seconds').textContent = seconds.toString().padStart(2, '0');
+            
+            // 同步标题、目标时间显示、进度条结束时间
+            let period = targetHour >= 12 ? '下午' : '上午';
+            let displayHour = targetHour > 12 ? targetHour - 12 : targetHour;
+            document.getElementById('countdown-title').textContent = `距离${period}${displayHour}:${targetMinute.toString().padStart(2, '0')}还有`;
+            const targetTimeText = `目标时间：今天 ${targetHour.toString().padStart(2, '0')}:${targetMinute.toString().padStart(2, '0')}:00`;
+            document.getElementById('target-time-display').textContent = targetTimeText;
+            document.getElementById('progress-end-time').textContent = `${targetHour.toString().padStart(2, '0')}:${targetMinute.toString().padStart(2, '0')}`;
+            
+            // 更新进度条
+            const workStart = new Date();
+            workStart.setHours(8, 30, 0, 0);
+            
+            let progressPercent;
+            if (now < workStart) {
+                progressPercent = 0;
+            } else if (now > target) {
+                progressPercent = 100;
+            } else {
+                const totalWorkTime = target - workStart;
+                const timePassed = now - workStart;
+                progressPercent = (timePassed / totalWorkTime) * 100;
+            }
+            
+            document.getElementById('progress').style.width = progressPercent + '%';
+            document.getElementById('progress-percentage').textContent = `${progressPercent.toFixed(1)}%`;
+            
+            // 更新鼓励消息
+            const message = document.getElementById('message');
+            const celebrate = document.getElementById('celebrate');
+            
+            if (diff < 0) {
+                message.textContent = "时间到！享受您的闲暇时光！";
+                celebrate.style.display = "block";
+            } else if (hours === 0 && minutes < 30) {
+                message.textContent = "快到了，再坚持一下！";
+            } else if (hours === 0) {
+                message.textContent = "不到一小时了，你可以的！";
+            } else if (hours < 3) {
+                message.textContent = "加油，工作即将结束！";
+            } else if (progressPercent < 20) {
+                message.textContent = "新的一天刚刚开始，保持活力！";
+            } else if (progressPercent < 50) {
+                message.textContent = "上午时光，高效工作的好时机！";
+            } else if (progressPercent < 70) {
+                message.textContent = "午后时分，保持节奏！";
+            } else {
+                message.textContent = "胜利在望，坚持就是胜利！";
+            }
+        }
+        
+        function updateAll() {
+            updateCurrentTime();
+            updateCountdown();
+        }
+        
+        // 初始更新
+        updateAll();
+        
+        // 每秒更新一次
+        setInterval(updateAll, 1000);
+        
+        // 输入框时间改变时，立即更新
+        document.getElementById('target-time-picker').addEventListener('change', updateCountdown);
+    </script>
+</body>
+</html>
